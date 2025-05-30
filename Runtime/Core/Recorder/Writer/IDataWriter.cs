@@ -1,8 +1,8 @@
 namespace PLUME.Core.Recorder.Writer
 {
-    public interface IDataWriter<out TDataWriterInfo> where TDataWriterInfo:IDataWriterInfo
+    public interface IDataWriter
     {
-        public TDataWriterInfo Info { get; }
+        public void Initialize(Record record);
 
         public void WriteTimelessData(DataChunks dataChunks);
 
@@ -12,7 +12,4 @@ namespace PLUME.Core.Recorder.Writer
 
         public void Close();
     }
-
-    public interface IDataWriterInfo
-    {}
 }

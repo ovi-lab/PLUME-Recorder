@@ -8,21 +8,22 @@ using UnityEngine;
 
 namespace PLUME.Core.Recorder.Writer
 {
-    public class NetworkDataWriter : IDataWriter<NetworkDataWriterInfo>
+    public class NetworkDataWriter : IDataWriter
     {
-        private readonly Stream _stream;
+        private Stream _stream;
+        private string ipAddress;
+        private int port;
 
-        public NetworkDataWriterInfo Info { get; private set; }
-
-        public NetworkDataWriter(Record record, NetworkDataWriterInfo networkDataWriterInfo = null)
+        public NetworkDataWriter(string ipAddress="127.0.0.1", int port=8000)
         {
-            if (networkDataWriterInfo == null)
-            {
-                networkDataWriterInfo = new NetworkDataWriterInfo(ipAddress: "127.0.0.1", port: 8000);
-            }
-            Info = networkDataWriterInfo;
+            this.ipAddress = ipAddress;
+            this.port = port;
+        }
+
+        public void Initialize(Record _)
+        {
             // Create a tcp server
-            var server = new TcpListener(IPAddress.Parse(Info.IpAddress), Info.Port);
+            var server = new TcpListener(IPAddress.Parse(ipAddress), port);
             server.Start();
             
             var stream = server.AcceptTcpClient().GetStream();
@@ -55,18 +56,6 @@ namespace PLUME.Core.Recorder.Writer
         public void Close()
         {
             _stream.Close();
-        }
-    }
-
-    public class NetworkDataWriterInfo : IDataWriterInfo
-    {
-        public string IpAddress { get; }
-        public int Port { get; }
-
-        public NetworkDataWriterInfo(string ipAddress, int port)
-        {
-            IpAddress = ipAddress;
-            Port = port;
         }
     }
 }

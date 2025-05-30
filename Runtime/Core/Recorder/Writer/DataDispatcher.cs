@@ -11,10 +11,10 @@ namespace PLUME.Core.Recorder.Writer
         private bool _running;
         private Thread _dispatcherThread;
 
-        private IDataWriter<IDataWriterInfo>[] _outputs;
+        private IDataWriter[] _outputs;
         private NetworkStream _networkStream;
 
-        internal void Start(Record record, IDataWriter<IDataWriterInfo>[] outputs)
+        internal void Start(Record record, IDataWriter[] outputs)
         {
             _outputs = outputs;
 

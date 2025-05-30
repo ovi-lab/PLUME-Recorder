@@ -7,36 +7,48 @@ using K4os.Compression.LZ4.Internal;
 using K4os.Compression.LZ4.Streams;
 using PLUME.Sample;
 using UnityEngine;
-using UnityEngine.Assertions;
 
 namespace PLUME.Core.Recorder.Writer
 {
     // TODO: add metadata file
     // TODO: add delayed write
     // TODO: use memory mapped files
-    public class FileDataWriter : IDataWriter<FileDataWriterInfo>, IDisposable
+    public class FileDataWriter : IDataWriter, IDisposable
     {
-        private readonly Stream _stream;
-        private readonly Stream _metaStream;
-        private readonly CodedOutputStream _metaCodedOutputStream;
+        private Stream _stream;
+        private Stream _metaStream;
+        private CodedOutputStream _metaCodedOutputStream;
         
-        private readonly Sample.RecordMetadata _metadata;
-        private readonly RecordMetrics _metrics;
+        private Sample.RecordMetadata _metadata;
+        private RecordMetrics _metrics;
 
-        public FileDataWriterInfo Info { get; private set; }
+        private string filePath;
+        private string metaFilePath;
 
-        public FileDataWriter(Record record, FileDataWriterInfo fileDataWriterInfo=null)
+        public FileDataWriter() { }
+
+        /// <param name="filePath">The file path for the plm file.</param>
+        /// <param name="metaFilePath">The file path for the meta file.</param>
+        public FileDataWriter(string filePath, string metaFilePath)
         {
-            if (fileDataWriterInfo == null)
+            this.filePath = filePath;
+            this.metaFilePath = metaFilePath;
+        }
+
+        /// <inheritdoc />
+        public void Initialize(Record record)
+        {
+            if (string.IsNullOrWhiteSpace(filePath) ^ string.IsNullOrWhiteSpace(metaFilePath))
+            {
+                throw new InvalidOperationException($"Only one of filePath and metaFilePath are specifed. Either both need to be specified, or neither should be");
+            }
+            else if (string.IsNullOrWhiteSpace(filePath) && string.IsNullOrWhiteSpace(metaFilePath))
             {
                 var outputDir = Application.persistentDataPath;
 
-                GenerateFilePath(outputDir, record.Metadata.Name, out var filePath, out var metaFilePath);
-                fileDataWriterInfo = new FileDataWriterInfo(filePath:filePath, metaFilePath:metaFilePath);
+                GenerateFilePath(outputDir, record.Metadata.Name, out filePath, out metaFilePath);
             }
-            Info = fileDataWriterInfo;
-
-            Logger.Log($"Record will be saved to '{fileDataWriterInfo.FilePath}'.");
+            Logger.Log($"Record will be saved to '{filePath}'.");
 
             PinnedMemory.MaxPooledSize = 0;
 
@@ -52,8 +64,8 @@ namespace PLUME.Core.Recorder.Writer
                 LZ4Codec.Enforce32 = false;
             }
 
-            _stream = LZ4Stream.Encode(File.Create(fileDataWriterInfo.FilePath), LZ4Level.L00_FAST);
-            _metaStream = File.Create(fileDataWriterInfo.MetaFilePath);
+            _stream = LZ4Stream.Encode(File.Create(filePath), LZ4Level.L00_FAST);
+            _metaStream = File.Create(metaFilePath);
             _metaCodedOutputStream = new CodedOutputStream(_metaStream);
             
             _metadata = record.Metadata.ToPayload();
@@ -139,21 +151,6 @@ namespace PLUME.Core.Recorder.Writer
             _stream.Dispose();
             _metaStream.Dispose();
             _metaCodedOutputStream.Dispose();
-        }
-    }
-
-    public class FileDataWriterInfo: IDataWriterInfo
-    {
-        public string FilePath { get; private set; }
-        public string MetaFilePath { get; private set; }
-
-        public FileDataWriterInfo(string filePath, string metaFilePath)
-        {
-            Assert.IsFalse(string.IsNullOrWhiteSpace(filePath), "filePath is null, empty or whitespace");
-            Assert.IsFalse(string.IsNullOrWhiteSpace(metaFilePath), "metaFilePath is null, empty or whitespace");
-
-            FilePath = filePath;
-            MetaFilePath = metaFilePath;
         }
     }
 }
