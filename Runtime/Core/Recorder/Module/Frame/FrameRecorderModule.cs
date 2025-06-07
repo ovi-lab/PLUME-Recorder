@@ -61,6 +61,7 @@ namespace PLUME.Core.Recorder.Module.Frame
         void IRecorderModule.StartRecording(RecorderContext ctx)
         {
             _lastUpdateTime = 0;
+            _lastFixedUpdateTime = ctx.CurrentRecord.Time;
             _shouldRunUpdate = true;
             _shouldSerialize = true;
 
