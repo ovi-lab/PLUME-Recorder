@@ -2,7 +2,7 @@ namespace PLUME.Core.Recorder.Writer
 {
     public interface IDataWriter
     {
-        public void Initialize(Record record);
+        public void SetMetaData(RecordMetadata metadata);
 
         public void WriteTimelessData(DataChunks dataChunks);
 

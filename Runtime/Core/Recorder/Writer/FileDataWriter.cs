@@ -7,6 +7,7 @@ using K4os.Compression.LZ4.Internal;
 using K4os.Compression.LZ4.Streams;
 using PLUME.Sample;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace PLUME.Core.Recorder.Writer
 {
@@ -15,39 +16,20 @@ namespace PLUME.Core.Recorder.Writer
     // TODO: use memory mapped files
     public class FileDataWriter : IDataWriter, IDisposable
     {
-        private Stream _stream;
-        private Stream _metaStream;
-        private CodedOutputStream _metaCodedOutputStream;
+        private readonly Stream _stream;
+        private readonly Stream _metaStream;
+        private readonly CodedOutputStream _metaCodedOutputStream;
         
+        private readonly RecordMetrics _metrics;
         private Sample.RecordMetadata _metadata;
-        private RecordMetrics _metrics;
-
-        private string filePath;
-        private string metaFilePath;
-
-        public FileDataWriter() { }
 
         /// <param name="filePath">The file path for the plm file.</param>
         /// <param name="metaFilePath">The file path for the meta file.</param>
         public FileDataWriter(string filePath, string metaFilePath)
         {
-            this.filePath = filePath;
-            this.metaFilePath = metaFilePath;
-        }
+            Assert.IsFalse(string.IsNullOrWhiteSpace(filePath), "filePath is null or empty");
+            Assert.IsFalse(string.IsNullOrWhiteSpace(metaFilePath), "metaFilePath is null or empty");
 
-        /// <inheritdoc />
-        public void Initialize(Record record)
-        {
-            if (string.IsNullOrWhiteSpace(filePath) ^ string.IsNullOrWhiteSpace(metaFilePath))
-            {
-                throw new InvalidOperationException($"Only one of filePath and metaFilePath are specifed. Either both need to be specified, or neither should be");
-            }
-            else if (string.IsNullOrWhiteSpace(filePath) && string.IsNullOrWhiteSpace(metaFilePath))
-            {
-                var outputDir = Application.persistentDataPath;
-
-                GenerateFilePath(outputDir, record.Metadata.Name, out filePath, out metaFilePath);
-            }
             Logger.Log($"Record will be saved to '{filePath}'.");
 
             PinnedMemory.MaxPooledSize = 0;
@@ -68,12 +50,15 @@ namespace PLUME.Core.Recorder.Writer
             _metaStream = File.Create(metaFilePath);
             _metaCodedOutputStream = new CodedOutputStream(_metaStream);
             
-            _metadata = record.Metadata.ToPayload();
             _metrics = new RecordMetrics
             {
                 IsSequential = true
             };
-            
+        }
+
+        public void SetMetaData(RecordMetadata metaData)
+        {
+            _metadata = metaData.ToPayload();
             UpdateMetaFile();
         }
 
@@ -123,6 +108,10 @@ namespace PLUME.Core.Recorder.Writer
 
         private void UpdateMetaFile()
         {
+            if (_metadata == null)
+            {
+                return;
+            }
             _metaStream.SetLength(0);
             _metaStream.Position = 0;
             _metaCodedOutputStream.WriteLength(_metadata.CalculateSize());

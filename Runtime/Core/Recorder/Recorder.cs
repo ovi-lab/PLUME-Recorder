@@ -77,7 +77,11 @@ namespace PLUME.Core.Recorder
 
             if (outputs == null)
             {
-                IDataWriter fileDataWriter = new FileDataWriter();
+                var outputDir = Application.persistentDataPath;
+
+                FileDataWriter.GenerateFilePath(outputDir, name, out string filePath, out string metaFilePath);
+
+                IDataWriter fileDataWriter = new FileDataWriter(filePath, metaFilePath);
                 outputs = new IDataWriter[] { fileDataWriter };
             }
 
@@ -85,7 +89,7 @@ namespace PLUME.Core.Recorder
 
             foreach (IDataWriter output in outputs)
             {
-                output.Initialize(record);
+                output.SetMetaData(recordMetadata);
             }
 
             _dataDispatcher.Start(_context.CurrentRecord, outputs);

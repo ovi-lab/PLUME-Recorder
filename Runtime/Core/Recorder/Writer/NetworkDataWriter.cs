@@ -10,17 +10,9 @@ namespace PLUME.Core.Recorder.Writer
 {
     public class NetworkDataWriter : IDataWriter
     {
-        private Stream _stream;
-        private string ipAddress;
-        private int port;
+        private readonly Stream _stream;
 
         public NetworkDataWriter(string ipAddress="127.0.0.1", int port=8000)
-        {
-            this.ipAddress = ipAddress;
-            this.port = port;
-        }
-
-        public void Initialize(Record _)
         {
             // Create a tcp server
             var server = new TcpListener(IPAddress.Parse(ipAddress), port);
@@ -36,6 +28,9 @@ namespace PLUME.Core.Recorder.Writer
             
             _stream = LZ4Stream.Encode(stream, LZ4Level.L00_FAST);
         }
+
+        public void SetMetaData(RecordMetadata _)
+        {}
 
         public void WriteTimelessData(DataChunks dataChunks)
         {
